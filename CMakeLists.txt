@@ -5,7 +5,7 @@ include(CTest)
 
 add_library(modern_cpp_algorithms INTERFACE)
 target_include_directories(modern_cpp_algorithms INTERFACE include)
-target_compile_features(modern_cpp_algorithms INTERFACE cxx_std_17)
+target_compile_features(modern_cpp_algorithms INTERFACE cxx_std_20)
 
 if(BUILD_TESTING)
   add_executable(modern_cpp_algorithms_tests tests/test_algorithms.cpp)

@@ -3,13 +3,26 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
+#include <ranges>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
 namespace modern_cpp_algorithms {
 
-template <typename ForwardIt, typename T, typename Compare = std::less<>>
+template <typename It, typename T, typename Compare = std::less<>>
+concept binary_searchable =
+    std::forward_iterator<It> &&
+    std::indirect_strict_weak_order<Compare, It, const T*>;
+
+template <typename It, typename Compare = std::less<>>
+concept sortable_random_access =
+    std::random_access_iterator<It> &&
+    std::indirect_strict_weak_order<Compare, It>;
+
+template <std::forward_iterator ForwardIt, typename T,
+          typename Compare = std::less<>>
+  requires binary_searchable<ForwardIt, T, Compare>
 constexpr bool binary_search(ForwardIt first, ForwardIt last, const T& value,
                              Compare compare = {}) {
   while (first != last) {
@@ -25,7 +38,19 @@ constexpr bool binary_search(ForwardIt first, ForwardIt last, const T& value,
   return false;
 }
 
-template <typename RandomIt, typename Compare = std::less<>>
+template <typename Range, typename T, typename Compare = std::less<>>
+  requires std::ranges::range<Range> &&
+           std::forward_iterator<std::ranges::iterator_t<Range>> &&
+           binary_searchable<std::ranges::iterator_t<Range>, T, Compare>
+constexpr bool binary_search(Range&& range, const T& value,
+                             Compare compare = {}) {
+  return binary_search(std::ranges::begin(range), std::ranges::end(range),
+                       value, std::move(compare));
+}
+
+template <std::random_access_iterator RandomIt,
+          typename Compare = std::less<>>
+  requires sortable_random_access<RandomIt, Compare>
 void merge_sort(RandomIt first, RandomIt last, Compare compare = {}) {
   const auto size = std::distance(first, last);
   if (size < 2) {
@@ -43,7 +68,17 @@ void merge_sort(RandomIt first, RandomIt last, Compare compare = {}) {
   std::move(merged.begin(), merged.end(), first);
 }
 
-template <typename RandomIt, typename Compare = std::less<>>
+template <std::ranges::random_access_range Range,
+          typename Compare = std::less<>>
+  requires sortable_random_access<std::ranges::iterator_t<Range>, Compare>
+void merge_sort(Range&& range, Compare compare = {}) {
+  merge_sort(std::ranges::begin(range), std::ranges::end(range),
+             std::move(compare));
+}
+
+template <std::random_access_iterator RandomIt,
+          typename Compare = std::less<>>
+  requires sortable_random_access<RandomIt, Compare>
 void quick_sort(RandomIt first, RandomIt last, Compare compare = {}) {
   if (last - first < 2) {
     return;
@@ -74,6 +109,14 @@ void quick_sort(RandomIt first, RandomIt last, Compare compare = {}) {
     quick_sort(first, upper + 1, compare);
   }
   quick_sort(lower, last, compare);
+}
+
+template <std::ranges::random_access_range Range,
+          typename Compare = std::less<>>
+  requires sortable_random_access<std::ranges::iterator_t<Range>, Compare>
+void quick_sort(Range&& range, Compare compare = {}) {
+  quick_sort(std::ranges::begin(range), std::ranges::end(range),
+             std::move(compare));
 }
 
 }  // namespace modern_cpp_algorithms
